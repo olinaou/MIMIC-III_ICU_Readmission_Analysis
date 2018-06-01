@@ -86,4 +86,5 @@ In this section, we use LSTM and LSTM_CNN as examples. you may want to different
 
 References
 [1] https://github.com/YerevaNN/mimic3-benchmarks
+
 [2] https://github.com/clinicalml/embeddings
