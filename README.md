@@ -61,24 +61,28 @@ In this section, we use LSTM and LSTM_CNN as examples. you may want to different
 
 1. Baselines. To run the baseline models (e.g., LR,NB,RF,SVM), please edit the directory in the code to the corresponding directory.
 
-	cd /mimic3models/readmission_baselines/logistic_cv_0
-	python svm_s_p.py
+       cd /mimic3models/readmission_baselines/logistic_cv_0
+       python svm_s_p.py
 	
 2. LSTM F48-h CE + ICD9. In this steps, we use the first 48 hours chart events after admitting to IUC to predict readmission.
-	cd /mimic3models/readmission_f48/
-	python3 -u main.py --network ../common_keras_models/lstm.py --dim 16 --timestep 1.0 --depth 2 --dropout 0.3 --mode test --batch_size 8 
+
+       cd /mimic3models/readmission_f48/
+       python3 -u main.py --network ../common_keras_models/lstm.py --dim 16 --timestep 1.0 --depth 2 --dropout 0.3 --mode test --batch_size 8 
 
 3. LSTM L48-h CE + ICD9. In this steps, we use the last 48 hours chart events before discharging from IUC to predict readmission.
-	cd /mimic3models/readmission_no_d/
-	python3 -u main.py --network ../common_keras_models/lstm.py --dim 16 --timestep 1.0 --depth 2 --dropout 0.3 --mode test --batch_size 8 
+
+       cd /mimic3models/readmission_no_d/
+       python3 -u main.py --network ../common_keras_models/lstm.py --dim 16 --timestep 1.0 --depth 2 --dropout 0.3 --mode test --batch_size 8 
 
 4. LSTM L48-h CE. In this steps, in order to see the impact of disease features, we remove the ICD 9 imbedding features to predict readmission.
-	cd /mimic3models/readmission_no_icd9/
-	python3 -u main.py --network ../common_keras_models/lstm.py --dim 16 --timestep 1.0 --depth 2 --dropout 0.3 --mode test --batch_size 8 
+
+       cd /mimic3models/readmission_no_icd9/
+       python3 -u main.py --network ../common_keras_models/lstm.py --dim 16 --timestep 1.0 --depth 2 --dropout 0.3 --mode test --batch_size 8 
 
 5. LSTM+CNN L48-h CE + ICD9 + D. In this steps, we include all of the information that we preprocess to predict readmission.
-	cd /mimic3models/readmission/
-	python3 -u main.py --network ../common_keras_models/lstm_cnn.py --dim 16 --timestep 1.0 --depth 2 --dropout 0.3 --mode test --batch_size 8 
+	
+       cd /mimic3models/readmission/
+       python3 -u main.py --network ../common_keras_models/lstm_cnn.py --dim 16 --timestep 1.0 --depth 2 --dropout 0.3 --mode test --batch_size 8 
 
 References
 [1] https://github.com/YerevaNN/mimic3-benchmarks
