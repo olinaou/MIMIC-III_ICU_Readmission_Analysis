@@ -85,6 +85,7 @@ In this section, we use LSTM and LSTM_CNN as examples. you may want to different
        python3 -u main.py --network ../common_keras_models/lstm_cnn.py --dim 16 --timestep 1.0 --depth 2 --dropout 0.3 --mode test --batch_size 8 
 
 References
+
 [1] https://github.com/YerevaNN/mimic3-benchmarks
 
 [2] https://github.com/clinicalml/embeddings
