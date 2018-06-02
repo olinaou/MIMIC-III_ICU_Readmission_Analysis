@@ -30,7 +30,7 @@ Please download the `claims_codes_hs_300.txt.gz`, extract it, and put the `claim
 
        python scripts/extract_subjects.py [MIMIC-III CSVs PATH] [OUTPUT PATH]
 
-3. We then try to to fix some missing data issue(ICU stay ID is missing). If the issues cannot be solved, we then removes the events. The code is provided by [].
+3. We then try to to fix some missing data issue(ICU stay ID is missing). If the issues cannot be solved, we then removes the events. The code is provided by [1].
 
 
        python scripts/validate_events.py [OUTPUT PATH]
