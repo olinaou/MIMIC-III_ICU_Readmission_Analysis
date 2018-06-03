@@ -21,7 +21,7 @@ Please download the `claims_codes_hs_300.txt.gz`, extract it, and put the `claim
 
 
 ## Preprocessing
-1. Add the path to the `PYTHONPATH` (sorry for this).
+1. Add the path to the `PYTHONPATH`.
 
     export PYTHONPATH=$PYTHONPATH:[PATH TO THIS REPOSITORY]
 
