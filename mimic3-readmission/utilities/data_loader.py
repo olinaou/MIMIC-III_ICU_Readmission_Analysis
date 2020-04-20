@@ -1,5 +1,7 @@
 import numpy
+
 from embeddings.WordVectorsManager import WordVectorsManager
+
 
 def get_embeddings(corpus, dim):
     vectors = WordVectorsManager(corpus, dim).read()
@@ -21,4 +23,3 @@ def get_embeddings(corpus, dim):
     emb_matrix[pos] = numpy.random.uniform(low=-0.05, high=0.05, size=dim)
 
     return emb_matrix, wv_map
-

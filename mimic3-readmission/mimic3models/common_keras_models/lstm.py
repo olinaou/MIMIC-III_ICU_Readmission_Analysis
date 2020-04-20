@@ -1,16 +1,17 @@
 from __future__ import absolute_import
-from keras.models import Model
+
 from keras.layers import Input, Dense, LSTM, Masking, Dropout
 from keras.layers.wrappers import Bidirectional
+from keras.models import Model
 
 
 class Network(Model):
-    
-    def __init__(self, dim, batch_norm, dropout, rec_dropout, task,
-                target_repl=False, deep_supervision=False, num_classes=1,
-                depth=1, input_dim=376, **kwargs):
 
-        print ("==> not used params in network class:", kwargs.keys())
+    def __init__(self, dim, batch_norm, dropout, rec_dropout, task,
+                 target_repl=False, deep_supervision=False, num_classes=1,
+                 depth=1, input_dim=376, **kwargs):
+
+        print("==> not used params in network class:", kwargs.keys())
 
         self.output_dim = dim
         self.batch_norm = batch_norm
@@ -44,19 +45,17 @@ class Network(Model):
 
         # Main part of the network
         for i in range(depth - 1):
-            #num_units = 48
+            # num_units = 48
 
             num_units = dim
             if is_bidirectional:
                 num_units = num_units // 2
-
 
             lstm = LSTM(num_units,
                         activation='tanh',
                         return_sequences=True,
                         dropout_U=rec_dropout,
                         dropout_W=dropout)
-
 
             if is_bidirectional:
                 mX = Bidirectional(lstm)(mX)
@@ -81,7 +80,6 @@ class Network(Model):
         if dropout > 0:
             L = Dropout(dropout)(L)
 
-
         y = Dense(num_classes, activation=final_activation)(L)
         outputs = [y]
 
@@ -91,8 +89,8 @@ class Network(Model):
     def say_name(self):
         self.network_class_name = "k_lstm"
         return "{}.n{}{}{}{}.dep{}".format(self.network_class_name,
-                    self.output_dim,
-                    ".bn" if self.batch_norm else "",
-                    ".d{}".format(self.dropout) if self.dropout > 0 else "",
-                    ".rd{}".format(self.rec_dropout) if self.rec_dropout > 0 else "",
-                    self.depth)
+                                           self.output_dim,
+                                           ".bn" if self.batch_norm else "",
+                                           ".d{}".format(self.dropout) if self.dropout > 0 else "",
+                                           ".rd{}".format(self.rec_dropout) if self.rec_dropout > 0 else "",
+                                           self.depth)

@@ -1,15 +1,14 @@
 from __future__ import absolute_import
-from keras.models import Model
-from keras.layers import Input, Dense, Dropout, Convolution1D, MaxPooling1D, Flatten
 
 from keras.engine import merge
-
+from keras.layers import Input, Dense, Dropout, Convolution1D, MaxPooling1D, Flatten
+from keras.models import Model
 
 
 class Network(Model):
     def __init__(self, dim, batch_norm, dropout, rec_dropout, task,
                  target_repl=False, deep_supervision=False, num_classes=1,
-                 depth=1, input_dim=376, **kwargs):
+                 depth=1, input_dim=390, **kwargs):
 
         print("==> not used params in network class:", kwargs.keys())
 
@@ -66,15 +65,11 @@ class Network(Model):
 
         return super(Network, self).__init__(inputs, outputs)
 
-
-
     def say_name(self):
-        self.network_class_name = "k_lstm"
+        self.network_class_name = "k_cnn"
         return "{}.n{}{}{}{}.dep{}".format(self.network_class_name,
                                            self.output_dim,
                                            ".bn" if self.batch_norm else "",
                                            ".d{}".format(self.dropout) if self.dropout > 0 else "",
                                            ".rd{}".format(self.rec_dropout) if self.rec_dropout > 0 else "",
                                            self.depth)
-
-

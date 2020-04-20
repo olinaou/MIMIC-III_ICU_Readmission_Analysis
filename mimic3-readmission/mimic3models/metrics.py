@@ -11,8 +11,8 @@ def print_metrics_binary(y_true, predictions, verbose=1):
 
     cf = metrics.confusion_matrix(y_true, predictions.argmax(axis=1))
     if verbose:
-        print ("confusion matrix:")
-        print (cf)
+        print("confusion matrix:")
+        print(cf)
     cf = cf.astype(np.float32)
 
     acc = (cf[0][0] + cf[1][1]) / np.sum(cf)
@@ -27,13 +27,13 @@ def print_metrics_binary(y_true, predictions, verbose=1):
     minpse = np.max([min(x, y) for (x, y) in zip(precisions, recalls)])
 
     if verbose:
-        print ("accuracy =", acc)
-        print ("precision class 0 =", prec0)
-        print ("precision class 1 =", prec1)
-        print ("recall class 0 =", rec0)
-        print ("recall calss 1 =", rec1)
-        print ("AUC of ROC =", auroc)
-        print ("AUC of PRC =", auprc)
+        print("accuracy =", acc)
+        print("precision class 0 =", prec0)
+        print("precision class 1 =", prec1)
+        print("recall class 0 =", rec0)
+        print("recall calss 1 =", rec1)
+        print("AUC of ROC =", auroc)
+        print("AUC of PRC =", auprc)
 
     return {"acc": acc,
             "prec0": prec0,
@@ -43,6 +43,3 @@ def print_metrics_binary(y_true, predictions, verbose=1):
             "auroc": auroc,
             "auprc": auprc,
             "minpse": minpse}
-
-
-
