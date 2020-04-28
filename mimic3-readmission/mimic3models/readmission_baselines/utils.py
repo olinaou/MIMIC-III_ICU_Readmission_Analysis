@@ -1,6 +1,8 @@
-from mimic3models import common_utils
-import numpy as np
 import os
+
+import numpy as np
+
+from mimic3models import common_utils
 from mimic3models import nn_utils
 
 
@@ -17,8 +19,7 @@ def load_data(reader, discretizer, normalizer, diseases_embedding, return_names=
     if (normalizer is not None):
         data = [normalizer.transform(X) for X in data]
 
-
-    data = [np.hstack([X, [d]*len(X)]) for (X, d) in zip(data, diseases_embedding)]
+    data = [np.hstack([X, [d] * len(X)]) for (X, d) in zip(data, diseases_embedding)]
 
     data = nn_utils.pad_zeros_from_left(data)
 

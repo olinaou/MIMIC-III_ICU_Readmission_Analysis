@@ -1,6 +1,7 @@
 import os
-import numpy as np
 import random
+
+import numpy as np
 
 
 class Reader(object):
@@ -104,7 +105,7 @@ class InHospitalMortalityReader(Reader):
         Reader.__init__(self, dataset_dir, listfile)
         self._data = [line.split(',') for line in self._data]
         self._data = [(x, int(y)) for (x, y) in self._data]
-        #print(self._data)
+        # print(self._data)
         self._period_length = period_length
 
     def _read_timeseries(self, ts_filename):
@@ -138,19 +139,21 @@ class InHospitalMortalityReader(Reader):
         if (index < 0 or index >= len(self._data)):
             raise ValueError("Index must be from 0 (inclusive) to number of lines (exclusive).")
 
-        #file name e.g.,10000_episode1_timeseries_readmission
+        # file name e.g.,10000_episode1_timeseries_readmission
         name = self._data[index][0]
         #
         t = self._period_length
         y = self._data[index][1]
         (X, header) = self._read_timeseries(name)
-        #print("X", X, "t", t, "y", y, "header", header, "name", name)
+        # print("X", X, "t", t, "y", y, "header", header, "name", name)
         return {"X": X,
                 "t": t,
                 "y": y,
                 "header": header,
                 "name": name}
-#==================
+
+
+# ==================
 
 class ReadmissionReader(Reader):
     def __init__(self, dataset_dir, listfile=None):
@@ -163,7 +166,6 @@ class ReadmissionReader(Reader):
         Reader.__init__(self, dataset_dir, listfile)
         self._data = [line.split(',') for line in self._data]
         self._data = [(x, float(t), int(y)) for (x, t, y) in self._data]
-
 
     def _read_timeseries(self, ts_filename):
         ret = []
@@ -207,7 +209,8 @@ class ReadmissionReader(Reader):
                 "header": header,
                 "name": name}
 
-#==================
+
+# ==================
 class LengthOfStayReader(Reader):
     def __init__(self, dataset_dir, listfile=None):
         """ Reader for length of stay prediction task.
@@ -339,7 +342,7 @@ class MultitaskReader(Reader):
             x = x.split(';')
             if x[0] == '':
                 return ([], [])
-            return (map(int, x[:len(x)/2]), map(float, x[len(x)/2:]))
+            return (map(int, x[:len(x) / 2]), map(float, x[len(x) / 2:]))
 
         def process_ph(x):
             return map(int, x.split(';'))
@@ -348,7 +351,7 @@ class MultitaskReader(Reader):
             x = x.split(';')
             if x[0] == '':
                 return ([], [])
-            return (map(int, x[:len(x)/2]), map(int, x[len(x)/2:]))
+            return (map(int, x[:len(x) / 2]), map(int, x[len(x) / 2:]))
 
         self._data = [(fname, float(t), process_ihm(ihm), process_los(los),
                        process_ph(pheno), process_decomp(decomp))

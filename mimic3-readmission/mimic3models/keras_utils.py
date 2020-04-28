@@ -1,8 +1,8 @@
-import numpy as np
-import mimic3models.metrics as m
-
 import keras
 import keras.backend as K
+import numpy as np
+
+import mimic3models.metrics as m
 
 if K.backend() == 'tensorflow':
     import tensorflow as tf
@@ -31,7 +31,7 @@ class ReadmissionMetrics(keras.callbacks.Callback):
         B = self.batch_size
         for i in range(0, len(data[0]), B):
             if self.verbose == 1:
-                print ("\r\tdone {}/{}".format(i, len(data[0])),)
+                print("\r\tdone {}/{}".format(i, len(data[0])), )
             if self.target_repl:
                 (x, y, y_repl) = (data[0][i:i + B], data[1][0][i:i + B], data[1][1][i:i + B])
             else:
@@ -42,7 +42,7 @@ class ReadmissionMetrics(keras.callbacks.Callback):
             else:
                 predictions += list(np.array(outputs).flatten())
             y_true += list(np.array(y).flatten())
-        print ("\n")
+        print("\n")
         predictions = np.array(predictions)
         predictions = np.stack([1 - predictions, predictions], axis=1)
         ret = m.print_metrics_binary(y_true, predictions)
@@ -51,9 +51,9 @@ class ReadmissionMetrics(keras.callbacks.Callback):
         history.append(ret)
 
     def on_epoch_end(self, epoch, logs={}):
-        print ("\n==>predicting on train")
+        print("\n==>predicting on train")
         self.calc_metrics(self.train_data, self.train_history, 'train', logs)
-        print ("\n==>predicting on validation")
+        print("\n==>predicting on validation")
         self.calc_metrics(self.val_data, self.val_history, 'val', logs)
 
         if self.early_stopping:
@@ -61,8 +61,6 @@ class ReadmissionMetrics(keras.callbacks.Callback):
             cur_auc = self.val_history[-1]["auroc"]
             if max_auc > 0.85 and cur_auc < 0.83:
                 self.model.stop_training = True
-
-
 
 
 # ===================== LAYERS ===================== #

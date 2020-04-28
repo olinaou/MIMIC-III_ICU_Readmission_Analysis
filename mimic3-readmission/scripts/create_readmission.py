@@ -1,9 +1,8 @@
 import argparse
-
-from mimic3benchmark.util import *
 import os
 import sys
 
+from mimic3benchmark.util import *
 
 parser = argparse.ArgumentParser(description='Extract episodes from per-subject data.')
 parser.add_argument('subjects_root_path', type=str, help='Directory containing subject sub-directories.')
@@ -12,18 +11,21 @@ parser.add_argument('--variable_map_file', type=str, default='resources/itemid_t
 parser.add_argument('--reference_range_file', type=str, default='resources/variable_ranges.csv',
                     help='CSV containing reference ranges for VARIABLEs.')
 parser.add_argument('--verbose', '-v', type=int, help='Level of verbosity in output.', default=1)
+parser.add_argument('--custom_model', type=str, help='Generate the data for a custom model.', default='original-paper')
 args, _ = parser.parse_known_args()
 
 
 def merge_stays_counts(table1, table2):
     return table1.merge(table2, how='inner', left_on=['HADM_ID'], right_on=['HADM_ID'])
 
+
 def add_inhospital_mortality_to_icustays(stays):
     mortality_all = stays.DOD.notnull() | stays.DEATHTIME.notnull()
     stays['MORTALITY'] = mortality_all.astype(int)
 
-    mortality = stays.DEATHTIME.notnull() & ((stays.ADMITTIME <= stays.DEATHTIME) & (stays.DISCHTIME >= stays.DEATHTIME))
-    #mortality = mortality | (stays.DEATHTIME.isnull() & stays.DOD.notnull() & ((stays.ADMITTIME <= stays.DOD) & (stays.DISCHTIME >= stays.DOD)))
+    mortality = stays.DEATHTIME.notnull() & (
+            (stays.ADMITTIME <= stays.DEATHTIME) & (stays.DISCHTIME >= stays.DEATHTIME))
+    # mortality = mortality | (stays.DEATHTIME.isnull() & stays.DOD.notnull() & ((stays.ADMITTIME <= stays.DOD) & (stays.DISCHTIME >= stays.DOD)))
 
     stays['MORTALITY0'] = mortality.astype(int)
     stays['MORTALITY_INHOSPITAL'] = stays['MORTALITY0']
@@ -36,6 +38,7 @@ def add_inunit_mortality_to_icustays(stays):
     stays['MORTALITY_INUNIT'] = mortality.astype(int)
     return stays
 
+
 def read_stays(subject_path):
     stays = dataframe_from_csv(os.path.join(subject_path, 'stays.csv'), index_col=None)
     stays.INTIME = pd.to_datetime(stays.INTIME)
@@ -47,6 +50,19 @@ def read_stays(subject_path):
     stays.DEATHTIME = pd.to_datetime(stays.DEATHTIME)
     stays.sort_values(by=['INTIME', 'OUTTIME'], inplace=True)
     return stays
+
+
+def get_readmission_labels(stays, stays_custom_model):
+    if args.custom_model == 'original-paper':
+        return ((stays.TRANSFERBACK == 1) | (stays.DIEINWARD == 1) | (stays.LESS_TAHN_30DAYS == 1) | (
+                stays.DIE_LESS_TAHN_30DAYS == 1)).astype(int)
+    elif args.custom_model == 'model-1':
+        return stays_custom_model.loc[stays.iloc[0]['ICUSTAY_ID']]['positive'].astype(int)
+
+
+stays_custom_model = dataframe_from_csv(os.path.join(args.subjects_root_path, 'stays_all_drop_sampled.csv'),
+                                        index_col='ICUSTAY_ID')
+
 '''
 stays = read_stays('/Users/jeffrey0925/MIMIC-III-clean/12607/')
 stays=add_inhospital_mortality_to_icustays(stays)
@@ -121,7 +137,7 @@ for subject_dir in os.listdir(args.subjects_root_path):
 
     stays = add_inhospital_mortality_to_icustays(stays)
     stays = add_inunit_mortality_to_icustays(stays)
-    #stays = stays.drop(stays[(stays.MORTALITY == 1) & (stays.MORTALITY_INHOSPITAL == 1) & (stays.MORTALITY_INUNIT == 1)].index)
+    # stays = stays.drop(stays[(stays.MORTALITY == 1) & (stays.MORTALITY_INHOSPITAL == 1) & (stays.MORTALITY_INUNIT == 1)].index)
 
     counts = stays.groupby(['HADM_ID']).size().reset_index(name='COUNTS')
     # print(counts)
@@ -154,15 +170,17 @@ for subject_dir in os.listdir(args.subjects_root_path):
 
     stays['DISCHARGE_DIE'] = stays.DOD - stays.DISCHTIME
 
-    stays['DIE_LESS_TAHN_30DAYS'] = (stays.MORTALITY == 1) & (stays.MORTALITY_INHOSPITAL == 0) & (stays.MORTALITY_INUNIT == 0) & (stays.DISCHARGE_DIE < '30 days 00:00:00')
+    stays['DIE_LESS_TAHN_30DAYS'] = (stays.MORTALITY == 1) & (stays.MORTALITY_INHOSPITAL == 0) & (
+            stays.MORTALITY_INUNIT == 0) & (stays.DISCHARGE_DIE < '30 days 00:00:00')
     stays['DIE_LESS_TAHN_30DAYS'] = stays['DIE_LESS_TAHN_30DAYS'].astype(int)
-    #print(stays[['ICUSTAY_ID', 'MORTALITY', 'MORTALITY_INHOSPITAL', 'MORTALITY_INUNIT', 'TRANSFERBACK', 'DIEINWARD','LESS_TAHN_30DAYS', 'DIE_LESS_TAHN_30DAYS']])
+    # print(stays[['ICUSTAY_ID', 'MORTALITY', 'MORTALITY_INHOSPITAL', 'MORTALITY_INUNIT', 'TRANSFERBACK', 'DIEINWARD','LESS_TAHN_30DAYS', 'DIE_LESS_TAHN_30DAYS']])
     # ----------------
-    stays['READMISSION'] = ((stays.TRANSFERBACK==1) | (stays.DIEINWARD==1) | (stays.LESS_TAHN_30DAYS==1) | (stays.DIE_LESS_TAHN_30DAYS==1)).astype(int)
+    stays['READMISSION'] = get_readmission_labels(stays, stays_custom_model)
 
-    stays.ix[(stays.MORTALITY == 1) & (stays.MORTALITY_INHOSPITAL == 1) & (stays.MORTALITY_INUNIT == 1), 'READMISSION'] = 2
+    stays.ix[
+        (stays.MORTALITY == 1) & (stays.MORTALITY_INHOSPITAL == 1) & (stays.MORTALITY_INUNIT == 1), 'READMISSION'] = 2
     stays.to_csv(os.path.join(args.subjects_root_path, subject_dir, 'stays_readmission.csv'), index=False)
 
     sys.stdout.write(' DONE!\n')
 
-#=========================
+# =========================

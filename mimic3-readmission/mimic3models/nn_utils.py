@@ -16,4 +16,3 @@ def pad_zeros(arr, min_length=None):
         ret = [np.concatenate([x, np.zeros((min_length - x.shape[0],) + x.shape[1:], dtype=dtype)], axis=0)
                for x in ret]
     return np.array(ret)
-

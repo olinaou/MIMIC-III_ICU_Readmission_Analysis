@@ -3,7 +3,12 @@ import os
 
 def read_chunk(reader, chunk_size):
     data = {}
+    jumps = 1
     for i in range(chunk_size):
+        percent = int((i / chunk_size) * 100)
+        if percent >= jumps:
+            print("loading i: " + str(percent))
+            jumps += 25
         ret = reader.read_next()
         for k, v in ret.items():
             if k not in data:
@@ -11,7 +16,6 @@ def read_chunk(reader, chunk_size):
             data[k].append(v)
     data["header"] = data["header"][0]
     return data
-
 
 
 def add_common_arguments(parser):

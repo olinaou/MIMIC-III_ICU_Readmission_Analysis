@@ -1,92 +1,90 @@
-import numpy as np
 import argparse
-import os
 import importlib.machinery
+import os
 import re
-from mimic3benchmark.util import *
 
-
-from mimic3models.readmission_f48 import utils
-from mimic3benchmark.readers import ReadmissionReader
-
-from mimic3models.preprocessing import Discretizer, Normalizer
-from mimic3models import metrics
-from mimic3models import keras_utils
-from mimic3models import common_utils
-
+import numpy as np
 from keras.callbacks import ModelCheckpoint, CSVLogger
 from keras.optimizers import Adam
+
+from mimic3benchmark.readers import ReadmissionReader
+from mimic3benchmark.util import *
+from mimic3models import common_utils
+from mimic3models import keras_utils
+from mimic3models import metrics
+from mimic3models.preprocessing import Discretizer, Normalizer
+from mimic3models.readmission_f48 import utils
 from utilities.data_loader import get_embeddings
 
 
-def read_diagnose(subject_path,icustay):
+def read_diagnose(subject_path, icustay):
     diagnoses = dataframe_from_csv(os.path.join(subject_path, 'diagnoses.csv'), index_col=None)
-    diagnoses=diagnoses.ix[(diagnoses.ICUSTAY_ID==int(icustay))]
-    diagnoses=diagnoses['ICD9_CODE'].values.tolist()
+    diagnoses = diagnoses.ix[(diagnoses.ICUSTAY_ID == int(icustay))]
+    diagnoses = diagnoses['ICD9_CODE'].values.tolist()
 
     return diagnoses
 
-def get_diseases(names,path):
-    disease_list=[]
-    namelist=[]
+
+def get_diseases(names, path):
+    disease_list = []
+    namelist = []
     for element in names:
-        x=element.split('_')
-        namelist.append((x[0],x[1]))
+        x = element.split('_')
+        namelist.append((x[0], x[1]))
     for x in namelist:
-        subject=x[0]
-        icustay=x[1]
-        subject_path=os.path.join(path, subject)
-        disease = read_diagnose(subject_path,icustay)
+        subject = x[0]
+        icustay = x[1]
+        subject_path = os.path.join(path, subject)
+        disease = read_diagnose(subject_path, icustay)
         disease_list.append(disease)
     return disease_list
 
 
-def disease_embedding(embeddings, word_indices,diseases_list):
-    emb_list=[]
+def disease_embedding(embeddings, word_indices, diseases_list):
+    emb_list = []
     for diseases in diseases_list:
-        emb_period=[0]*300
-        skip=0
+        emb_period = [0] * 300
+        skip = 0
         for disease in diseases:
-            k='IDX_'+str(disease)
+            k = 'IDX_' + str(disease)
             if k not in word_indices.keys():
-                skip+=1
+                skip += 1
                 continue
-            index=word_indices[k]
-            emb_disease=embeddings[index]
+            index = word_indices[k]
+            emb_disease = embeddings[index]
             emb_period = [sum(x) for x in zip(emb_period, emb_disease)]
         emb_list.append(emb_period)
     return emb_list
+
+
 parser = argparse.ArgumentParser()
 common_utils.add_common_arguments(parser)
 parser.add_argument('--target_repl_coef', type=float, default=0.0)
 args = parser.parse_args()
-print (args)
-
-
+print(args)
 
 target_repl = (args.target_repl_coef > 0.0 and args.mode == 'train')
 embeddings, word_indices = get_embeddings(corpus='claims_codes_hs', dim=300)
 
 train_reader = ReadmissionReader(dataset_dir='/mnt/MIMIC-III-clean/readmission_cv2/data/',
-                                         listfile='/mnt/MIMIC-III-clean/readmission_cv2/0_train_listfile801010.csv')
+                                 listfile='/mnt/MIMIC-III-clean/readmission_cv2/0_train_listfile801010.csv')
 
 val_reader = ReadmissionReader(dataset_dir='/mnt/MIMIC-III-clean/readmission_cv2/data/',
-                                       listfile='/mnt/MIMIC-III-clean/readmission_cv2/0_val_listfile801010.csv')
+                               listfile='/mnt/MIMIC-III-clean/readmission_cv2/0_val_listfile801010.csv')
 
 discretizer = Discretizer(timestep=float(args.timestep),
                           store_masks=True,
                           imput_strategy='previous',
                           start_time='zero')
 
-N=train_reader.get_number_of_examples()
+N = train_reader.get_number_of_examples()
 ret = common_utils.read_chunk(train_reader, N)
 data = ret["X"]
 ts = ret["t"]
 labels = ret["y"]
 names = ret["name"]
-diseases_list=get_diseases(names, '/mnt/MIMIC-III-clean/data/')
-diseases_embedding=disease_embedding(embeddings, word_indices,diseases_list)
-
+diseases_list = get_diseases(names, '/mnt/MIMIC-III-clean/data/')
+diseases_embedding = disease_embedding(embeddings, word_indices, diseases_list)
 
 discretizer_header = discretizer.transform(ret["X"][0])[1].split(',')
 cont_channels = [i for (i, x) in enumerate(discretizer_header) if x.find("->") == -1]
@@ -94,11 +92,8 @@ normalizer = Normalizer(fields=cont_channels)  # choose here onlycont vs all
 
 data = [discretizer.transform_first_t_hours(X, end=t)[0] for (X, t) in zip(data, ts)]
 
-
 [normalizer._feed_data(x=X) for X in data]
 normalizer._use_params()
-
-
 
 args_dict = dict(args._get_kwargs())
 
@@ -106,7 +101,7 @@ args_dict['task'] = 'ihm'
 args_dict['target_repl'] = target_repl
 
 # Build the model
-print ("==> using model {}".format(args.network))
+print("==> using model {}".format(args.network))
 print('os.path.basename(args.network), args.network: ', os.path.basename(args.network), args.network)
 model_module = importlib.machinery.SourceFileLoader(os.path.basename(args.network), args.network).load_module()
 model = model_module.Network(**args_dict)
@@ -116,11 +111,10 @@ suffix = ".bs{}{}{}.ts{}{}".format(args.batch_size,
                                    args.timestep,
                                    ".trc{}".format(args.target_repl_coef) if args.target_repl_coef > 0 else "")
 model.final_name = args.prefix + model.say_name() + suffix
-print ("==> model.final_name:", model.final_name)
-
+print("==> model.final_name:", model.final_name)
 
 # Compile the model
-print ("==> compiling the model")
+print("==> compiling the model")
 
 # NOTE: one can use binary_crossentropy even for (B, T, C) shape.
 #       It will calculate binary_crossentropies for each class
@@ -129,7 +123,7 @@ print ("==> compiling the model")
 loss = 'binary_crossentropy'
 loss_weights = None
 print(model)
-model.compile(optimizer=Adam(lr=0.001, beta_1=0.9), loss=loss,loss_weights=loss_weights)
+model.compile(optimizer=Adam(lr=0.001, beta_1=0.9), loss=loss, loss_weights=loss_weights)
 
 model.summary()
 
@@ -138,7 +132,6 @@ n_trained_chunks = 0
 if args.load_state != "":
     model.load_weights(args.load_state)
     n_trained_chunks = int(re.match(".*epoch([0-9]+).*", args.load_state).group(1))
-
 
 # Read data
 train_raw = utils.load_train_data(train_reader, discretizer, normalizer, diseases_embedding)
@@ -150,27 +143,29 @@ print('train_raw train_raw[0][1]: ', len(train_raw[0][1]))
 
 print('train_raw: ', len(train_raw[0][0][0]))
 
-
-N1=val_reader.get_number_of_examples()
+N1 = val_reader.get_number_of_examples()
 ret1 = common_utils.read_chunk(val_reader, N1)
 
 names1 = ret1["name"]
-diseases_list1=get_diseases(names1, '/mnt/MIMIC-III-clean/data/')
+diseases_list1 = get_diseases(names1, '/mnt/MIMIC-III-clean/data/')
 
-diseases_embedding1=disease_embedding(embeddings, word_indices,diseases_list1)
+diseases_embedding1 = disease_embedding(embeddings, word_indices, diseases_list1)
 val_raw = utils.load_data(val_reader, discretizer, normalizer, diseases_embedding1)
 
 if target_repl:
     T = train_raw[0][0].shape[0]
-    #print('T: ', T)
+
+
+    # print('T: ', T)
 
     def extend_labels(data):
         data = list(data)
-        labels = np.array(data[1]) # (B,)
+        labels = np.array(data[1])  # (B,)
         data[1] = [labels, None]
-        data[1][1] = np.expand_dims(labels, axis=-1).repeat(T, axis=1) # (B, T)
-        data[1][1] = np.expand_dims(data[1][1], axis=-1) # (B, T, 1)
+        data[1][1] = np.expand_dims(labels, axis=-1).repeat(T, axis=1)  # (B, T)
+        data[1][1] = np.expand_dims(data[1][1], axis=-1)  # (B, T, 1)
         return data
+
 
     train_raw = extend_labels(train_raw)
     val_raw = extend_labels(val_raw)
@@ -181,10 +176,10 @@ if args.mode == 'train':
     path = 'keras_states/' + model.final_name + '.epoch{epoch}.test{val_loss}.state'
 
     metrics_callback = keras_utils.ReadmissionMetrics(train_data=train_raw,
-                                                              val_data=val_raw,
-                                                              target_repl=(args.target_repl_coef > 0),
-                                                              batch_size=args.batch_size,
-                                                              verbose=args.verbose)
+                                                      val_data=val_raw,
+                                                      target_repl=(args.target_repl_coef > 0),
+                                                      batch_size=args.batch_size,
+                                                      verbose=args.verbose)
     # make sure save directory exists
     dirname = os.path.dirname(path)
     if not os.path.exists(dirname):
@@ -196,7 +191,7 @@ if args.mode == 'train':
     csv_logger = CSVLogger(os.path.join('keras_logs', model.final_name + '.csv'),
                            append=True, separator=';')
 
-    print ("==> training")
+    print("==> training")
     model.fit(x=train_raw[0],
               y=train_raw[1],
               validation_data=val_raw,
@@ -225,7 +220,7 @@ elif args.mode == 'test':
     diseases_list = get_diseases(names, '/mnt/MIMIC-III-clean/data/')
     diseases_embedding = disease_embedding(embeddings, word_indices, diseases_list)
 
-    ret = utils.load_data(test_reader, discretizer, normalizer, diseases_embedding,return_names=True)
+    ret = utils.load_data(test_reader, discretizer, normalizer, diseases_embedding, return_names=True)
 
     data = ret["data"][0]
     labels = ret["data"][1]

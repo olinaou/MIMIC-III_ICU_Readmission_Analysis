@@ -1,8 +1,10 @@
 from __future__ import print_function
-import os
+
 import argparse
-import pandas as pd
+import os
 import os.path
+
+import pandas as pd
 
 
 def is_subject_folder(x):
@@ -10,14 +12,13 @@ def is_subject_folder(x):
 
 
 def main():
-
-    n_events = 0                   # total number of events
-    empty_hadm = 0                 # HADM_ID is empty in events.csv. We exclude such events.
-    no_hadm_in_stay = 0            # HADM_ID does not appear in stays.csv. We exclude such events.
-    no_icustay = 0                 # ICUSTAY_ID is empty in events.csv. We try to fix such events.
-    recovered = 0                  # empty ICUSTAY_IDs are recovered according to stays.csv files (given HADM_ID)
-    could_not_recover = 0          # empty ICUSTAY_IDs that are not recovered. This should be zero.
-    icustay_missing_in_stays = 0   # ICUSTAY_ID does not appear in stays.csv. We exclude such events.
+    n_events = 0  # total number of events
+    empty_hadm = 0  # HADM_ID is empty in events.csv. We exclude such events.
+    no_hadm_in_stay = 0  # HADM_ID does not appear in stays.csv. We exclude such events.
+    no_icustay = 0  # ICUSTAY_ID is empty in events.csv. We try to fix such events.
+    recovered = 0  # empty ICUSTAY_IDs are recovered according to stays.csv files (given HADM_ID)
+    could_not_recover = 0  # empty ICUSTAY_IDs that are not recovered. This should be zero.
+    icustay_missing_in_stays = 0  # ICUSTAY_ID does not appear in stays.csv. We exclude such events.
 
     parser = argparse.ArgumentParser()
     parser.add_argument('subjects_root_path', type=str,
@@ -30,21 +31,21 @@ def main():
 
     for (index, subject) in enumerate(subjects):
         if index % 100 == 0:
-            print("processed {} / {} {}\r".format(index+1, len(subjects), ' '*10))
+            print("processed {} / {} {}\r".format(index + 1, len(subjects), ' ' * 10))
 
         stays_df = pd.read_csv(os.path.join(args.subjects_root_path, subject, 'stays.csv'), index_col=False,
                                dtype={'HADM_ID': str, "ICUSTAY_ID": str})
         stays_df.columns = stays_df.columns.str.upper()
 
         # assert that there is no row with empty ICUSTAY_ID or HADM_ID
-        assert(not stays_df['ICUSTAY_ID'].isnull().any())
-        assert(not stays_df['HADM_ID'].isnull().any())
+        assert (not stays_df['ICUSTAY_ID'].isnull().any())
+        assert (not stays_df['HADM_ID'].isnull().any())
 
         # assert there are no repetitions of ICUSTAY_ID or HADM_ID
         # since admissions with multiple ICU stays were excluded
-        assert(len(stays_df['ICUSTAY_ID'].unique()) == len(stays_df['ICUSTAY_ID']))
-        #assert(len(stays_df['HADM_ID'].unique()) == len(stays_df['HADM_ID']))
-        if os.path.isfile(os.path.join(args.subjects_root_path, subject, 'events.csv'))==False:
+        assert (len(stays_df['ICUSTAY_ID'].unique()) == len(stays_df['ICUSTAY_ID']))
+        # assert(len(stays_df['HADM_ID'].unique()) == len(stays_df['HADM_ID']))
+        if os.path.isfile(os.path.join(args.subjects_root_path, subject, 'events.csv')) == False:
             continue
         events_df = pd.read_csv(os.path.join(args.subjects_root_path, subject, 'events.csv'), index_col=False,
                                 dtype={'HADM_ID': str, "ICUSTAY_ID": str})
@@ -82,7 +83,7 @@ def main():
         to_write = merged_df[['SUBJECT_ID', 'HADM_ID', 'ICUSTAY_ID', 'CHARTTIME', 'ITEMID', 'VALUE', 'VALUEUOM']]
         to_write.to_csv(os.path.join(args.subjects_root_path, subject, 'events.csv'), index=False)
 
-    assert(could_not_recover == 0)
+    assert (could_not_recover == 0)
     print('n_events: {}'.format(n_events))
     print('empty_hadm: {}'.format(empty_hadm))
     print('no_hadm_in_stay: {}'.format(no_hadm_in_stay))
